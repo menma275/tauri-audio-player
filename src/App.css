@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Default Dark Mode Colors */
+  --brand-black: #000000;
+  --brand-dark: #0A0A0A;
+  --brand-panel: #161616;
+  --brand-border: #262626;
+  --brand-border-active: #4A4A4A;
+  --brand-muted: #8A8A8A;
+  --brand-normal: #E2E2E2;
+  --brand-white: #FFFFFF;
+}
+
+[data-theme='light'] {
+  /* Light Mode Colors (Inverted roles) */
+  --brand-black: #FFFFFF;
+  --brand-dark: #F5F5F7;
+  --brand-panel: #E5E5EA;
+  --brand-border: #D1D1D6;
+  --brand-border-active: #8E8E93;
+  --brand-muted: #8E8E93;
+  --brand-normal: #1C1C1E;
+  --brand-white: #000000;
+}
+
+@theme {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-brand-black: var(--brand-black);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-border: var(--brand-border);
+  --color-brand-border-active: var(--brand-border-active);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-normal: var(--brand-normal);
+  --color-brand-white: var(--brand-white);
+}
+
+body {
+  font-family: var(--font-sans);
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  background-color: transparent;
+}
+
+/* Custom Webkit scrollbar for sleek minimalist layout */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(24, 24, 27, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Custom drag region style */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* WebKit border-radius overflow clip fix for custom transparent windows */
+.window-container {
+  transform: translateZ(0);
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
