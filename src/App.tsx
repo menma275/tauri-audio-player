@@ -443,12 +443,12 @@ export default function App() {
     <div data-theme={theme} className="flex flex-col h-screen w-full select-none text-brand-normal bg-brand-black overflow-hidden relative">
       {/* Immersive Blurred Cover Art Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute inset-0 bg-brand-dark/90" />
+        <div className="absolute inset-0 bg-brand-dark/50" />
         {currentSong?.cover_art ? (
           <img
             src={currentSong.cover_art}
             alt=""
-            className="w-full h-full object-cover blur-[100px] opacity-[0.22] scale-110 transition-all duration-1000 ease-in-out"
+            className="w-full h-full object-cover blur-[100px] opacity-[0.5] scale-110 transition-all duration-1000 ease-in-out"
           />
         ) : (
           <div className="w-full h-full bg-brand-black" />
@@ -464,19 +464,87 @@ export default function App() {
         </div>
       )}
 
+      {/* 1. Header Bar */}
+      <header className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-6 shrink-0 z-30 bg-transparent no-drag">
+        {/* Left: Toggles */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-normal transition-colors cursor-pointer flex items-center justify-center"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              isSidebarOpen ? "text-brand-white bg-brand-panel" : "text-brand-muted hover:text-brand-normal"
+            }`}
+            title="Library"
+          >
+            <ListMusic className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsLyricsOpen(!isLyricsOpen)}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              isLyricsOpen ? "text-brand-white bg-brand-panel" : "text-brand-muted hover:text-brand-normal"
+            }`}
+            title="Lyrics"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Right: Volume Bar */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="text-brand-normal hover:text-brand-white transition-colors cursor-pointer"
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted || volume === 0 ? (
+              <VolumeX className="w-4 h-4 text-brand-normal" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-brand-normal" />
+            )}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={isMuted ? 0 : volume}
+            onChange={(e) => {
+              setVolume(parseFloat(e.target.value));
+              if (isMuted) setIsMuted(false);
+            }}
+            className="w-20 custom-slider cursor-pointer bg-brand-border"
+            style={{
+              background: `linear-gradient(to right, var(--brand-white) ${
+                (isMuted ? 0 : volume) * 100
+              }%, var(--brand-border) ${
+                (isMuted ? 0 : volume) * 100
+              }%)`
+            }}
+          />
+        </div>
+      </header>
+
       {/* 2. Main Area (Split screen with Drawers) */}
       <div className="flex flex-1 overflow-hidden relative z-10">
         {/* Library Drawer (Inline, splits the space) */}
         <aside
           style={{ width: isSidebarOpen ? `${sidebarWidth}px` : "0px" }}
-          className={`border-r border-brand-border/40 bg-brand-dark/20 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 relative ${
+          className={`bg-brand-dark/20 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 relative ${
             isResizing ? "" : "transition-all duration-300 ease-in-out"
           } ${
-            isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none border-r-0"
+            isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <div className="w-full h-full flex flex-col min-w-[190px] shrink-0">
-            <div className="p-3">
+            <div className="p-3 pt-14">
               <button
                 onClick={selectFolder}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-brand-panel/60 hover:bg-brand-border hover:text-brand-white transition-all cursor-pointer truncate text-brand-normal font-medium active:scale-[0.98]"
@@ -489,7 +557,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-2 pb-4">
+            <div className="flex-1 overflow-y-auto px-2 pb-24">
               {songs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center p-6 mt-10 text-brand-muted">
                   <FileAudio className="w-9 h-9 mb-2 opacity-35 text-brand-normal" />
@@ -557,20 +625,12 @@ export default function App() {
         </aside>
 
         {/* Left Panel / Main content: Large Ambient Cover Art card & Details */}
-        <div className="flex-1 flex flex-col justify-center items-center p-8 select-none bg-transparent transition-all duration-300">
+        <div className="flex-1 flex flex-col justify-center items-center p-8 pt-14 pb-24 select-none bg-transparent transition-all duration-300">
           {currentSong ? (
             <div className="flex flex-col items-center text-center w-full max-w-sm">
-              {/* floating cover art with blurred replica background drop-shadow */}
               <div className="relative group">
-                {currentSong.cover_art && (
-                  <img
-                    src={currentSong.cover_art}
-                    alt=""
-                    className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[90%] h-full rounded-2xl blur-2xl opacity-40 scale-95 select-none pointer-events-none transition-transform duration-700 group-hover:scale-100"
-                  />
-                )}
                 <div
-                  className={`w-80 h-80 rounded-2xl overflow-hidden bg-brand-panel border border-brand-border shadow-2xl relative z-10 transition-all duration-500 ease-out hover:scale-102 ${
+                  className={`w-80 h-80 rounded-2xl overflow-hidden bg-brand-panel relative z-10 transition-all duration-500 ease-out hover:scale-102 ${
                     isPlaying ? "scale-100" : "scale-[0.96] opacity-90"
                   }`}
                 >
@@ -587,6 +647,14 @@ export default function App() {
                   )}
                 </div>
               </div>
+              <div className="mt-6 min-w-0">
+                <h1 className="text-base font-semibold text-brand-white truncate max-w-[280px]">
+                  {currentSong.title}
+                </h1>
+                <p className="text-xs text-brand-muted truncate max-w-[280px] mt-1.5">
+                  {currentSong.artist}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center text-center text-brand-muted">
@@ -598,10 +666,10 @@ export default function App() {
         {/* Lyrics Drawer (Inline, splits the space) */}
         <aside
           style={{ width: isLyricsOpen ? `${lyricsWidth}px` : "0px" }}
-          className={`border-l border-brand-border/20 bg-brand-dark/20 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 relative ${
+          className={`bg-brand-dark/20 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 relative ${
             isLyricsResizing ? "" : "transition-all duration-300 ease-in-out"
           } ${
-            isLyricsOpen ? "opacity-100" : "opacity-0 pointer-events-none border-l-0"
+            isLyricsOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <div className="w-full h-full flex flex-col min-w-[190px] shrink-0">
@@ -610,7 +678,7 @@ export default function App() {
             <div
               ref={lyricsContainerRef}
               onScroll={handleLyricsScroll}
-              className="flex-1 overflow-y-auto px-10 py-24 scroll-smooth"
+              className="flex-1 overflow-y-auto px-10 pt-24 pb-32 scroll-smooth"
             >
               {lyrics.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center h-full text-brand-muted p-4">
@@ -630,7 +698,7 @@ export default function App() {
                         onClick={() => handleLyricClick(line.time)}
                         className={`text-center py-1 transition-all duration-[350ms] cursor-pointer rounded-xl px-4 hover:bg-brand-panel/20 ${
                           isActive
-                            ? "text-brand-white text-xl font-bold scale-[1.03] opacity-100 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+                            ? "text-brand-white text-lg font-bold opacity-100 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]"
                             : "text-brand-muted text-sm font-medium hover:text-brand-normal opacity-[0.55]"
                         }`}
                       >
@@ -659,38 +727,9 @@ export default function App() {
       </div>
 
       {/* 3. Bottom Playback Control Bar */}
-      <footer className="h-20 bg-brand-black/40 border-t border-brand-border/40 px-6 flex items-center justify-between no-drag select-none z-10 backdrop-blur-md">
-        {/* Left: Active Song details */}
-        <div className="w-1/4 flex items-center gap-3">
-          {currentSong && (
-            <>
-              <div className="w-11 h-11 rounded-lg bg-brand-panel border border-brand-border overflow-hidden shrink-0 shadow-md">
-                {currentSong.cover_art ? (
-                  <img
-                    src={currentSong.cover_art}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-brand-muted">
-                    <Music className="w-5 h-5 text-brand-white" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-brand-white truncate max-w-[180px]">
-                  {currentSong.title}
-                </p>
-                <p className="text-[10px] text-brand-muted truncate max-w-[180px] mt-0.5">
-                  {currentSong.artist}
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-
+      <footer className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[480px] h-20 bg-transparent px-6 flex items-center justify-center no-drag select-none z-20">
         {/* Center: Controls & Slider Progress */}
-        <div className="flex-1 max-w-xl flex flex-col items-center gap-2">
+        <div className="w-full flex flex-col items-center gap-2">
           {/* Playback Buttons */}
           <div className="flex items-center gap-5">
             <button
@@ -715,13 +754,13 @@ export default function App() {
             <button
               onClick={togglePlay}
               disabled={!currentSong}
-              className="p-2.5 rounded-full bg-brand-white text-brand-black hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center disabled:opacity-40 disabled:hover:scale-100 shadow-md"
+              className="p-2 text-brand-normal hover:text-brand-white transition-colors cursor-pointer active:scale-90 flex items-center justify-center disabled:opacity-30"
               title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
-                <Pause className="w-4.5 h-4.5 fill-current text-brand-black" />
+                <Pause className="w-5 h-5 fill-current" />
               ) : (
-                <Play className="w-4.5 h-4.5 fill-current translate-x-[1px] text-brand-black" />
+                <Play className="w-5 h-5 fill-current translate-x-[0.5px]" />
               )}
             </button>
 
@@ -755,7 +794,7 @@ export default function App() {
           </div>
 
           {/* Progress Slider */}
-          <div className="w-full flex items-center gap-3">
+          <div className="w-[360px] flex items-center gap-3">
             <span className="text-[10px] text-brand-muted font-medium w-8 text-right">
               {formatTime(currentTime)}
             </span>
@@ -778,70 +817,6 @@ export default function App() {
               {formatTime(duration)}
             </span>
           </div>
-        </div>
-
-        {/* Right: Volume Controls & Toggle Buttons */}
-        <div className="w-1/4 flex items-center justify-end gap-3">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-normal transition-colors cursor-pointer flex items-center justify-center"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              isSidebarOpen ? "text-brand-white bg-brand-panel" : "text-brand-muted hover:text-brand-normal"
-            }`}
-            title="Library"
-          >
-            <ListMusic className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => setIsLyricsOpen(!isLyricsOpen)}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              isLyricsOpen ? "text-brand-white bg-brand-panel" : "text-brand-muted hover:text-brand-normal"
-            }`}
-            title="Lyrics"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-
-          <div className="h-4 w-[1px] bg-brand-border/40 mx-1.5" />
-
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="text-brand-normal hover:text-brand-white transition-colors cursor-pointer"
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted || volume === 0 ? (
-              <VolumeX className="w-4 h-4 text-brand-normal" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-brand-normal" />
-            )}
-          </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={isMuted ? 0 : volume}
-            onChange={(e) => {
-              setVolume(parseFloat(e.target.value));
-              if (isMuted) setIsMuted(false);
-            }}
-            className="w-20 custom-slider cursor-pointer bg-brand-border"
-            style={{
-              background: `linear-gradient(to right, var(--brand-white) ${
-                (isMuted ? 0 : volume) * 100
-              }%, var(--brand-border) ${
-                (isMuted ? 0 : volume) * 100
-              }%)`
-            }}
-          />
         </div>
       </footer>
 

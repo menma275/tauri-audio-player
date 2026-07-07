@@ -16,10 +16,10 @@
 [data-theme='light'] {
   /* Light Mode Colors (Inverted roles) */
   --brand-black: #FFFFFF;
-  --brand-dark: #F5F5F7;
-  --brand-panel: #E5E5EA;
-  --brand-border: #D1D1D6;
-  --brand-border-active: #8E8E93;
+  --brand-dark: #F5F5F5;
+  --brand-panel: #E5E5E5;
+  --brand-border: #D1D1D1;
+  --brand-border-active: #8E8E8E;
   --brand-muted: #999999;
   --brand-normal: #707070;
   --brand-white: #444444;
@@ -67,7 +67,7 @@ body {
 
 /* Glassmorphism utility classes */
 .glass-panel {
-  background: rgba(24, 24, 27, 0.75);
+  background: rgba(24, 24, 24, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
