@@ -20,9 +20,9 @@
   --brand-panel: #E5E5EA;
   --brand-border: #D1D1D6;
   --brand-border-active: #8E8E93;
-  --brand-muted: #8E8E93;
-  --brand-normal: #1C1C1E;
-  --brand-white: #000000;
+  --brand-muted: #999999;
+  --brand-normal: #707070;
+  --brand-white: #444444;
 }
 
 @theme {
@@ -87,3 +87,66 @@ body {
   isolation: isolate;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
+
+/* Custom range slider styling */
+.custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  height: 4px;
+  border-radius: 9999px;
+}
+
+/* Chrome, Safari, Opera, and Edge */
+.custom-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand-white);
+  cursor: pointer;
+  margin-top: calc((4px - 12px) / 2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.custom-slider:hover::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+/* Firefox */
+.custom-slider::-moz-range-track {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.custom-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand-white);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.custom-slider:hover::-moz-range-thumb {
+  opacity: 1;
+}
+
+

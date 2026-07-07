@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "Player",
   "version": "0.1.0",
   "identifier": "com.mp3player.app",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Antigravity Player",
+        "title": "Player",
         "width": 960,
         "height": 640,
         "minWidth": 800,

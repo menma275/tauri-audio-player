@@ -479,7 +479,7 @@ export default function App() {
             <div className="p-3">
               <button
                 onClick={selectFolder}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-brand-panel/60 hover:bg-brand-border hover:text-brand-white border border-brand-border/60 transition-all cursor-pointer truncate shadow-sm text-brand-normal font-medium active:scale-[0.98]"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-brand-panel/60 hover:bg-brand-border hover:text-brand-white transition-all cursor-pointer truncate text-brand-normal font-medium active:scale-[0.98]"
                 title={folderPath || "Select Music Folder"}
               >
                 <FolderOpen className="w-3.5 h-3.5 text-brand-muted shrink-0" />
@@ -590,9 +590,7 @@ export default function App() {
             </div>
           ) : (
             <div className="flex flex-col items-center text-center text-brand-muted">
-              <div className="p-6 rounded-full bg-brand-panel/30 border border-brand-border shadow-inner">
-                <Music className="w-12 h-12 text-brand-white/50" />
-              </div>
+              <Music className="w-12 h-12 text-brand-white/30" />
             </div>
           )}
         </div>
@@ -767,7 +765,14 @@ export default function App() {
               max={duration || 0}
               value={currentTime}
               onChange={handleProgressChange}
-              className="flex-1 h-1 bg-brand-border rounded-lg appearance-none cursor-pointer accent-brand-white hover:accent-brand-normal focus:outline-none active:h-1.5 transition-all"
+              className="flex-1 custom-slider cursor-pointer bg-brand-border"
+              style={{
+                background: `linear-gradient(to right, var(--brand-white) ${
+                  duration ? (currentTime / duration) * 100 : 0
+                }%, var(--brand-border) ${
+                  duration ? (currentTime / duration) * 100 : 0
+                }%)`
+              }}
             />
             <span className="text-[10px] text-brand-muted font-medium w-8">
               {formatTime(duration)}
@@ -828,7 +833,14 @@ export default function App() {
               setVolume(parseFloat(e.target.value));
               if (isMuted) setIsMuted(false);
             }}
-            className="w-20 h-1 bg-brand-border rounded-lg appearance-none cursor-pointer accent-brand-white hover:accent-brand-normal focus:outline-none transition-all"
+            className="w-20 custom-slider cursor-pointer bg-brand-border"
+            style={{
+              background: `linear-gradient(to right, var(--brand-white) ${
+                (isMuted ? 0 : volume) * 100
+              }%, var(--brand-border) ${
+                (isMuted ? 0 : volume) * 100
+              }%)`
+            }}
           />
         </div>
       </footer>
