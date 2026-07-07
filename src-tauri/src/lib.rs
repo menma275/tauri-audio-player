@@ -25,6 +25,92 @@ fn select_folder() -> Option<String> {
 }
 
 #[tauri::command]
+fn scan_song_file(file_path: &Path) -> Option<Song> {
+    let ext = file_path.extension()?.to_str()?.to_ascii_lowercase();
+    if ext == "mp3" || ext == "m4a" || ext == "flac" || ext == "wav" || ext == "ogg" {
+        let mut title = file_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "Unknown".to_string());
+        let mut artist = "Unknown Artist".to_string();
+        let mut album = "Unknown Album".to_string();
+        let mut duration = 0.0;
+        let mut cover_art = None;
+
+        if let Ok(tagged_file) = Probe::open(file_path).and_then(|p| p.read()) {
+            let properties = tagged_file.properties();
+            duration = properties.duration().as_secs_f64();
+
+            if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
+                if let Some(t) = tag.title() {
+                    if !t.trim().is_empty() {
+                        title = t.into_owned();
+                    }
+                }
+                if let Some(a) = tag.artist() {
+                    if !a.trim().is_empty() {
+                        artist = a.into_owned();
+                    }
+                }
+                if let Some(al) = tag.album() {
+                    if !al.trim().is_empty() {
+                        album = al.into_owned();
+                    }
+                }
+                
+                // Extract picture/cover art
+                for picture in tag.pictures() {
+                    let data = BASE64_STANDARD.encode(picture.data());
+                    let mime = picture.mime_type()
+                        .map(|m| m.to_string())
+                        .unwrap_or_else(|| "image/jpeg".to_string());
+                    cover_art = Some(format!("data:{};base64,{}", mime, data));
+                    break; // just take the first picture
+                }
+            }
+        }
+
+        // Check for matching LRC file
+        let mut lyrics_path = None;
+        let lrc_path = file_path.with_extension("lrc");
+        if lrc_path.exists() && lrc_path.is_file() {
+            lyrics_path = Some(lrc_path.to_string_lossy().into_owned());
+        }
+
+        Some(Song {
+            id: file_path.to_string_lossy().into_owned(),
+            path: file_path.to_string_lossy().into_owned(),
+            title,
+            artist,
+            album,
+            duration,
+            cover_art,
+            lyrics_path,
+        })
+    } else {
+        None
+    }
+}
+
+fn visit_dirs(dir: &Path, songs: &mut Vec<Song>, depth: usize) {
+    if depth > 12 {
+        return; // Avoid too deep recursion
+    }
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                visit_dirs(&path, songs, depth + 1);
+            } else if path.is_file() {
+                if let Some(song) = scan_song_file(&path) {
+                    songs.push(song);
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
 fn scan_folder(folder_path: String) -> Result<Vec<Song>, String> {
     let mut path = Path::new(&folder_path).to_path_buf();
     if path.is_file() {
@@ -39,81 +125,7 @@ fn scan_folder(folder_path: String) -> Result<Vec<Song>, String> {
     }
 
     let mut songs = Vec::new();
-    let entries = fs::read_dir(path).map_err(|e| e.to_string())?;
-
-    for entry in entries {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        let file_path = entry.path();
-        if file_path.is_file() {
-            if let Some(ext) = file_path.extension() {
-                if ext.to_ascii_lowercase() == "mp3" {
-                    // Extract metadata
-                    let mut title = file_path
-                        .file_stem()
-                        .map(|s| s.to_string_lossy().into_owned())
-                        .unwrap_or_else(|| "Unknown".to_string());
-                    let mut artist = "Unknown Artist".to_string();
-                    let mut album = "Unknown Album".to_string();
-                    let mut duration = 0.0;
-                    let mut cover_art = None;
-
-                    if let Ok(tagged_file) = Probe::open(&file_path).and_then(|p| p.read()) {
-                        let properties = tagged_file.properties();
-                        duration = properties.duration().as_secs_f64();
-
-                        if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
-                            if let Some(t) = tag.title() {
-                                if !t.trim().is_empty() {
-                                    title = t.into_owned();
-                                }
-                            }
-                            if let Some(a) = tag.artist() {
-                                if !a.trim().is_empty() {
-                                    artist = a.into_owned();
-                                }
-                            }
-                            if let Some(al) = tag.album() {
-                                if !al.trim().is_empty() {
-                                    album = al.into_owned();
-                                }
-                            }
-                            
-                            // Extract picture/cover art
-                            for picture in tag.pictures() {
-                                let data = BASE64_STANDARD.encode(picture.data());
-                                let mime = picture.mime_type()
-                                    .map(|m| m.to_string())
-                                    .unwrap_or_else(|| "image/jpeg".to_string());
-                                cover_art = Some(format!("data:{};base64,{}", mime, data));
-                                break; // just take the first picture
-                            }
-                        }
-                    }
-
-                    // Check for matching LRC file
-                    let mut lyrics_path = None;
-                    let lrc_path = file_path.with_extension("lrc");
-                    if lrc_path.exists() && lrc_path.is_file() {
-                        lyrics_path = Some(lrc_path.to_string_lossy().into_owned());
-                    }
-
-                    songs.push(Song {
-                        id: file_path.to_string_lossy().into_owned(),
-                        path: file_path.to_string_lossy().into_owned(),
-                        title,
-                        artist,
-                        album,
-                        duration,
-                        cover_art,
-                        lyrics_path,
-                    });
-                }
-            }
-        }
-    }
+    visit_dirs(&path, &mut songs, 0);
 
     // Sort songs alphabetically by title
     songs.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));

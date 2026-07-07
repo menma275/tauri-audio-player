@@ -18,7 +18,9 @@ import {
   FileAudio,
   FileText,
   Sun,
-  Moon
+  Moon,
+  Disc,
+  X
 } from "lucide-react";
 
 interface Song {
@@ -64,8 +66,72 @@ function parseLRC(lrcText: string): LyricLine[] {
 export default function App() {
   // Playlist / Songs States
   const [folderPath, setFolderPath] = useState<string>("");
+  const [allSongs, setAllSongs] = useState<Song[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
+  const [sidebarTab, setSidebarTab] = useState<"songs" | "albums">("songs");
+
+  // Interface for computed Album structures
+  interface Album {
+    name: string;
+    songs: Song[];
+    cover_art: string | null;
+    artist: string;
+  }
+
+  // Derive albums list from allSongs
+  const albums = (() => {
+    const albumMap = new Map<string, Song[]>();
+    const standaloneSongs: Song[] = [];
+
+    allSongs.forEach((song) => {
+      const albumName = song.album;
+      const isUnknown = !albumName || albumName === "Unknown Album" || albumName.trim() === "";
+
+      if (isUnknown) {
+        standaloneSongs.push(song);
+      } else {
+        if (!albumMap.has(albumName)) {
+          albumMap.set(albumName, []);
+        }
+        albumMap.get(albumName)!.push(song);
+      }
+    });
+
+    const albumList: Album[] = [];
+
+    albumMap.forEach((songs, name) => {
+      const firstWithCover = songs.find((s) => s.cover_art);
+      const cover_art = firstWithCover ? firstWithCover.cover_art : null;
+
+      const artists = Array.from(new Set(songs.map((s) => s.artist)));
+      const artist = artists.length === 1 ? artists[0] : "Various Artists";
+
+      albumList.push({
+        name,
+        songs,
+        cover_art,
+        artist,
+      });
+    });
+
+    // Sort albums alphabetically by name
+    albumList.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+    // Add virtual album for standalone/singles
+    if (standaloneSongs.length > 0) {
+      const firstWithCover = standaloneSongs.find((s) => s.cover_art);
+      albumList.push({
+        name: "シングル / その他(アルバム名なし)",
+        songs: standaloneSongs,
+        cover_art: firstWithCover ? firstWithCover.cover_art : null,
+        artist: "楽曲単体",
+      });
+    }
+
+    return albumList;
+  })();
 
   // Playback States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -294,8 +360,11 @@ export default function App() {
     try {
       const list = await invoke<Song[]>("scan_folder", { folderPath: path });
       if (list && list.length > 0) {
+        setAllSongs(list);
         setSongs(list);
         setFolderPath(path);
+        setSelectedAlbum(null);
+        setSidebarTab("songs");
         localStorage.setItem("last_music_folder", path);
         if (!currentSong) {
           setCurrentSong(list[0]);
@@ -557,55 +626,158 @@ export default function App() {
               </button>
             </div>
 
+            {/* Tab switcher */}
+            {allSongs.length > 0 && (
+              <div className="flex px-3 pb-2 border-b border-brand-border/30 gap-1">
+                <button
+                  onClick={() => setSidebarTab("songs")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    sidebarTab === "songs"
+                      ? "bg-brand-panel text-brand-white"
+                      : "text-brand-muted hover:text-brand-normal"
+                  }`}
+                >
+                  <Music className="w-3.5 h-3.5" />
+                  曲一覧
+                </button>
+                <button
+                  onClick={() => setSidebarTab("albums")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    sidebarTab === "albums"
+                      ? "bg-brand-panel text-brand-white"
+                      : "text-brand-muted hover:text-brand-normal"
+                  }`}
+                >
+                  <Disc className="w-3.5 h-3.5" />
+                  アルバム
+                </button>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto px-2 pb-24">
-              {songs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center p-6 mt-10 text-brand-muted">
-                  <FileAudio className="w-9 h-9 mb-2 opacity-35 text-brand-normal" />
-                  <p className="text-xs">No audio files found</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {songs.map((song) => {
-                    const isActive = currentSong?.path === song.path;
-                    return (
+              {sidebarTab === "songs" ? (
+                <>
+                  {selectedAlbum && (
+                    <div className="flex items-center justify-between mx-1.5 my-2 p-2 rounded-xl bg-brand-panel/40 border border-brand-border/40 text-xs">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] text-brand-muted font-semibold">アルバムでフィルター中</p>
+                        <p className="text-brand-white font-medium truncate mt-0.5" title={selectedAlbum}>
+                          {selectedAlbum}
+                        </p>
+                      </div>
                       <button
-                        key={song.path}
                         onClick={() => {
-                          setCurrentSong(song);
-                          setIsPlaying(true);
+                          setSongs(allSongs);
+                          setSelectedAlbum(null);
                         }}
-                        className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-brand-panel text-brand-white"
-                            : "hover:bg-brand-panel/30 text-brand-muted hover:text-brand-normal"
-                        }`}
+                        className="p-1 rounded-lg text-brand-muted hover:text-brand-white hover:bg-brand-panel/60 transition-colors cursor-pointer shrink-0 ml-1.5"
+                        title="すべての曲を表示"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-brand-panel flex items-center justify-center overflow-hidden shrink-0 border border-brand-border">
-                          {song.cover_art ? (
-                            <img
-                              src={song.cover_art}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Music className={`w-4 h-4 ${isActive ? "text-brand-white" : "text-brand-muted"}`} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-semibold truncate ${isActive ? "text-brand-white" : "text-brand-normal"}`}>
-                            {song.title}
-                          </p>
-                          <p className="text-[10px] text-brand-muted truncate mt-0.5">
-                            {song.artist}
-                          </p>
-                        </div>
-                        <div className="text-[10px] text-brand-muted font-medium shrink-0">
-                          {formatTime(song.duration)}
-                        </div>
+                        <X className="w-3.5 h-3.5" />
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                  )}
+
+                  {songs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center p-6 mt-10 text-brand-muted">
+                      <FileAudio className="w-9 h-9 mb-2 opacity-35 text-brand-normal" />
+                      <p className="text-xs">No audio files found</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      {songs.map((song) => {
+                        const isActive = currentSong?.path === song.path;
+                        return (
+                          <button
+                            key={song.path}
+                            onClick={() => {
+                              setCurrentSong(song);
+                              setIsPlaying(true);
+                            }}
+                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-brand-panel text-brand-white"
+                                : "hover:bg-brand-panel/30 text-brand-muted hover:text-brand-normal"
+                            }`}
+                          >
+                            <div className="w-9 h-9 rounded-lg bg-brand-panel flex items-center justify-center overflow-hidden shrink-0 border border-brand-border">
+                              {song.cover_art ? (
+                                <img
+                                  src={song.cover_art}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Music className={`w-4 h-4 ${isActive ? "text-brand-white" : "text-brand-muted"}`} />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-semibold truncate ${isActive ? "text-brand-white" : "text-brand-normal"}`}>
+                                {song.title}
+                              </p>
+                              <p className="text-[10px] text-brand-muted truncate mt-0.5">
+                                {song.artist}
+                              </p>
+                            </div>
+                            <div className="text-[10px] text-brand-muted font-medium shrink-0">
+                              {formatTime(song.duration)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {albums.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center p-6 mt-10 text-brand-muted">
+                      <Disc className="w-9 h-9 mb-2 opacity-35 text-brand-normal" />
+                      <p className="text-xs">アルバムが見つかりません</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      {albums.map((album) => {
+                        const isCurrentAlbumFiltered = selectedAlbum === album.name;
+                        return (
+                          <button
+                            key={album.name}
+                            onClick={() => {
+                              setSongs(album.songs);
+                              setSelectedAlbum(album.name);
+                              setSidebarTab("songs");
+                            }}
+                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                              isCurrentAlbumFiltered
+                                ? "bg-brand-panel text-brand-white"
+                                : "hover:bg-brand-panel/30 text-brand-muted hover:text-brand-normal"
+                            }`}
+                          >
+                            <div className="w-9 h-9 rounded-lg bg-brand-panel flex items-center justify-center overflow-hidden shrink-0 border border-brand-border">
+                              {album.cover_art ? (
+                                <img
+                                  src={album.cover_art}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Disc className={`w-4 h-4 ${isCurrentAlbumFiltered ? "text-brand-white" : "text-brand-muted"}`} />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-semibold truncate ${isCurrentAlbumFiltered ? "text-brand-white" : "text-brand-normal"}`}>
+                                {album.name}
+                              </p>
+                              <p className="text-[10px] text-brand-muted truncate mt-0.5">
+                                {album.artist} • {album.songs.length}曲
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
